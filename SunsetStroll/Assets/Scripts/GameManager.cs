@@ -1,0 +1,77 @@
+using UnityEngine;
+
+namespace SunsetStroll
+{
+	public class GameManager : MonoBehaviour
+	{
+		public static GameManager Instance { get; private set; }
+
+		[Header("Game Speed")] 
+		[SerializeField] private float startingSpeed = 7f;
+		[SerializeField] private float maxSpeed = 20f;
+		[SerializeField] private float speedIncreasePerSecond = 0.25f;
+
+		[Header("Spawning")] 
+		[SerializeField] private float startingSpawnInterval = 1.25f;
+		[SerializeField] private float minSpawnInterval = 0.35f;
+		[SerializeField] private float spawnIntervalDecreasePerSecond = 0.03f;
+
+		[Header("Scoring")] 
+		[SerializeField] private float scorePerSecondAtBaseSpeed = 10f;
+
+		public float CurrentSpeed { get; private set; }
+		public float CurrentSpawnInterval { get; private set; }
+		public float Score { get; private set; }
+		public bool IsRunning { get; private set; }
+
+		public System.Action OnGameOver;
+		public System.Action<float> OnScoreChanged;
+
+		private void Awake()
+		{
+			if (Instance != null && Instance != this)
+			{
+				Destroy(gameObject);
+				return;
+			}
+			Instance = this;
+			DontDestroyOnLoad(gameObject);
+		}
+
+		private void Start()
+		{
+			ResetGame();
+		}
+
+		private void Update()
+		{
+			if (!IsRunning) return;
+
+			// Speed ramp
+			CurrentSpeed = Mathf.Min(maxSpeed, CurrentSpeed + speedIncreasePerSecond * Time.deltaTime);
+
+			// Spawn interval ramp (decrease over time)
+			CurrentSpawnInterval = Mathf.Max(minSpawnInterval, CurrentSpawnInterval - spawnIntervalDecreasePerSecond * Time.deltaTime);
+
+			// Score increases with speed factor
+			float speedFactor = Mathf.InverseLerp(startingSpeed, maxSpeed, CurrentSpeed);
+			Score += (scorePerSecondAtBaseSpeed * (0.6f + speedFactor)) * Time.deltaTime;
+			OnScoreChanged?.Invoke(Score);
+		}
+
+		public void ResetGame()
+		{
+			CurrentSpeed = startingSpeed;
+			CurrentSpawnInterval = startingSpawnInterval;
+			Score = 0f;
+			IsRunning = true;
+		}
+
+		public void GameOver()
+		{
+			if (!IsRunning) return;
+			IsRunning = false;
+			OnGameOver?.Invoke();
+		}
+	}
+}
