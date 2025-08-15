@@ -23,9 +23,11 @@ namespace SunsetStroll
 		public float CurrentSpawnInterval { get; private set; }
 		public float Score { get; private set; }
 		public bool IsRunning { get; private set; }
+		public bool IsPaused { get; private set; }
 
 		public System.Action OnGameOver;
 		public System.Action<float> OnScoreChanged;
+		public System.Action<bool> OnPauseChanged;
 
 		private void Awake()
 		{
@@ -45,7 +47,7 @@ namespace SunsetStroll
 
 		private void Update()
 		{
-			if (!IsRunning) return;
+			if (!IsRunning || IsPaused) return;
 
 			// Speed ramp
 			CurrentSpeed = Mathf.Min(maxSpeed, CurrentSpeed + speedIncreasePerSecond * Time.deltaTime);
@@ -55,12 +57,13 @@ namespace SunsetStroll
 
 			// Score increases with speed factor
 			float speedFactor = Mathf.InverseLerp(startingSpeed, maxSpeed, CurrentSpeed);
-			Score += (scorePerSecondAtBaseSpeed * (0.6f + speedFactor)) * Time.deltaTime;
-			OnScoreChanged?.Invoke(Score);
+			AddScore((scorePerSecondAtBaseSpeed * (0.6f + speedFactor)) * Time.deltaTime);
 		}
 
 		public void ResetGame()
 		{
+			Time.timeScale = 1f;
+			IsPaused = false;
 			CurrentSpeed = startingSpeed;
 			CurrentSpawnInterval = startingSpawnInterval;
 			Score = 0f;
@@ -73,6 +76,35 @@ namespace SunsetStroll
 			if (!IsRunning) return;
 			IsRunning = false;
 			OnGameOver?.Invoke();
+		}
+
+		public void AddScore(float amount)
+		{
+			if (amount == 0f) return;
+			Score += amount;
+			if (Score < 0f) Score = 0f;
+			OnScoreChanged?.Invoke(Score);
+		}
+
+		public void PauseGame()
+		{
+			if (IsPaused) return;
+			IsPaused = true;
+			Time.timeScale = 0f;
+			OnPauseChanged?.Invoke(true);
+		}
+
+		public void ResumeGame()
+		{
+			if (!IsPaused) return;
+			IsPaused = false;
+			Time.timeScale = 1f;
+			OnPauseChanged?.Invoke(false);
+		}
+
+		public void TogglePause()
+		{
+			if (IsPaused) ResumeGame(); else PauseGame();
 		}
 	}
 }

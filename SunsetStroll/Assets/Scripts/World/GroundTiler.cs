@@ -10,7 +10,7 @@ namespace SunsetStroll.World
 
 		private void Update()
 		{
-			if (!SunsetStroll.GameManager.Instance.IsRunning) return;
+			if (!SunsetStroll.GameManager.Instance.IsRunning || SunsetStroll.GameManager.Instance.IsPaused) return;
 			if (Camera.main == null || tiles == null || tiles.Length == 0) return;
 
 			float leftEdge = Camera.main.transform.position.x - Camera.main.orthographicSize * Camera.main.aspect - recycleBuffer;

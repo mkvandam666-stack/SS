@@ -18,7 +18,7 @@ namespace SunsetStroll.World
 
 		private void Update()
 		{
-			if (!SunsetStroll.GameManager.Instance.IsRunning) return;
+			if (!SunsetStroll.GameManager.Instance.IsRunning || SunsetStroll.GameManager.Instance.IsPaused) return;
 			float speed = useGameSpeed ? SunsetStroll.GameManager.Instance.CurrentSpeed * parallaxRatio : manualSpeed;
 			transform.Translate(Vector3.left * speed * Time.deltaTime);
 			LoopSegmentsIfNeeded();

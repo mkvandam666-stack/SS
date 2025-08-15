@@ -99,7 +99,7 @@ namespace SunsetStroll.EditorTools
 			follow.GetType().GetField("offset", System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(follow, new Vector2(0f, 0f));
 			follow.GetType().GetField("followY", System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(follow, false);
 
-			// Spawner
+			// Spawner - obstacles
 			GameObject spawnerGO = new GameObject("ObstacleSpawner");
 			spawnerGO.transform.position = new Vector3(12f, -1.5f, 0f);
 			var spawner = spawnerGO.AddComponent<SunsetStroll.Spawning.ObstacleSpawner>();
@@ -111,6 +111,16 @@ namespace SunsetStroll.EditorTools
 			prefabs[3] = SunsetStroll.Spawning.ObstaclePlaceholderFactory.CreateBoxObstacle("GarbageBin", new Vector2(0.9f, 1.1f), new Color(0.2f,0.6f,0.2f));
 			prefabs[4] = SunsetStroll.Spawning.ObstaclePlaceholderFactory.CreateBoxObstacle("Dog", new Vector2(1.0f, 0.6f), new Color(0.6f,0.4f,0.2f));
 			spawner.GetType().GetField("obstaclePrefabs", System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(spawner, prefabs);
+
+			// Coin prefab (in-memory)
+			GameObject coinPrefab = CreateCoinPrefab();
+
+			// Spawner - coins
+			GameObject coinSpawnerGO = new GameObject("CoinSpawner");
+			coinSpawnerGO.transform.position = new Vector3(12f, -1.2f, 0f);
+			var coinSpawner = coinSpawnerGO.AddComponent<SunsetStroll.Spawning.CoinSpawner>();
+			coinSpawner.GetType().GetField("spawnPoint", System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(coinSpawner, coinSpawnerGO.transform);
+			coinSpawner.GetType().GetField("coinPrefab", System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(coinSpawner, coinPrefab);
 
 			// UI Canvas
 			GameObject canvasGO = new GameObject("Canvas");
@@ -131,8 +141,27 @@ namespace SunsetStroll.EditorTools
 			text.rectTransform.pivot = new Vector2(0,1);
 			text.rectTransform.anchoredPosition = new Vector2(12, -12);
 
-			// Hook score updates
+			// Pause overlay
+			GameObject pauseGO = new GameObject("PauseOverlay");
+			pauseGO.transform.SetParent(canvasGO.transform);
+			var pauseText = pauseGO.AddComponent<Text>();
+			pauseText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+			pauseText.fontSize = 36;
+			pauseText.alignment = TextAnchor.MiddleCenter;
+			pauseText.color = new Color(1,1,1,0.9f);
+			pauseText.text = "Paused\nPress Esc to resume";
+			pauseText.rectTransform.anchorMin = new Vector2(0,0);
+			pauseText.rectTransform.anchorMax = new Vector2(1,1);
+			pauseText.rectTransform.offsetMin = Vector2.zero;
+			pauseText.rectTransform.offsetMax = Vector2.zero;
+			pauseText.gameObject.SetActive(false);
+
+			// Hook score and pause updates
 			SunsetStroll.GameManager.Instance.OnScoreChanged += (s)=> { if (text!=null) text.text = $"Score: {Mathf.RoundToInt(s)}"; };
+			SunsetStroll.GameManager.Instance.OnPauseChanged += (p)=> { if (pauseText!=null) pauseText.gameObject.SetActive(p); };
+
+			// Add pause input handler
+			var input = cam.gameObject.AddComponent<PauseInputListener>();
 
 			EditorSceneManager.MarkSceneDirty(scene);
 		}
@@ -148,6 +177,20 @@ namespace SunsetStroll.EditorTools
 			// scale visual so sprite covers desired world size (sprite is 0.02 units at PPU 100)
 			visual.transform.localScale = new Vector3(size.x * 50f, size.y * 50f, 1f);
 			return root;
+		}
+
+		private static GameObject CreateCoinPrefab()
+		{
+			GameObject coin = new GameObject("Coin");
+			var sr = coin.AddComponent<SpriteRenderer>();
+			sr.sprite = BuildSolidSprite(new Color(1f, 0.85f, 0.2f));
+			sr.sortingOrder = 18;
+			coin.transform.localScale = new Vector3(0.5f * 50f, 0.5f * 50f, 1f);
+			var col = coin.AddComponent<CircleCollider2D>();
+			col.isTrigger = true;
+			coin.AddComponent<SunsetStroll.World.ScrollingMover>();
+			coin.AddComponent<SunsetStroll.Collectibles.Coin>();
+			return coin;
 		}
 
 		private static Sprite BuildSolidSprite(Color color)
@@ -326,6 +369,18 @@ namespace SunsetStroll.EditorTools
 			clip.SetCurve("", typeof(Transform), "localPosition.y", yCurve);
 			clip.wrapMode = WrapMode.Loop;
 			return clip;
+		}
+
+		// Simple component to toggle pause with Escape
+		private class PauseInputListener : MonoBehaviour
+		{
+			private void Update()
+			{
+				if (Input.GetKeyDown(KeyCode.Escape))
+				{
+					SunsetStroll.GameManager.Instance.TogglePause();
+				}
+			}
 		}
 #endif
 	}
