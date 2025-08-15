@@ -125,6 +125,7 @@ namespace SunsetStroll.EditorTools
 			text.fontSize = 28;
 			text.alignment = TextAnchor.UpperLeft;
 			text.color = Color.white;
+			text.text = "Score: 0";
 			text.rectTransform.anchorMin = new Vector2(0,1);
 			text.rectTransform.anchorMax = new Vector2(0,1);
 			text.rectTransform.pivot = new Vector2(0,1);

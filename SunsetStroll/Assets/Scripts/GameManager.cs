@@ -65,6 +65,7 @@ namespace SunsetStroll
 			CurrentSpawnInterval = startingSpawnInterval;
 			Score = 0f;
 			IsRunning = true;
+			OnScoreChanged?.Invoke(Score);
 		}
 
 		public void GameOver()
